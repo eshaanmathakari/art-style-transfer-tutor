@@ -1,0 +1,9 @@
+torch>=2.2
+torchvision
+diffusers[torch]
+transformers
+openai         # or 'llama-cpp-python' if local
+pillow         # image I/O
+streamlit
+python-dotenv  # load API keys
+accelerate     # GPU/CPU toggle
