@@ -1,3 +1,14 @@
 .venv/
 __pycache__/
 .env
+.DS_store
+.env.example
+
+*.pyc
+*.pyo
+*.pyd
+*build*/
+*dist*/
+*egg-info*/
+
+.streamlit/

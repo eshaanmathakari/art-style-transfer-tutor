@@ -7,3 +7,8 @@ pillow         # image I/O
 streamlit
 python-dotenv  # load API keys
 accelerate     # GPU/CPU toggle
+streamlit
+google-generativeai # For Gemini API (text/vision)
+google-cloud-aiplatform # For Vertex AI Imagen (image generation)
+google-cloud-vision # Optional: For analyzing input image content
+requests # Often useful for API interactions
