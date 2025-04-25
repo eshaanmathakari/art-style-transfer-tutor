@@ -13,8 +13,6 @@ from styles import STYLES
 from image_engine import StyleEngine
 from tutor import explain
 
-# --- Cache the StyleEngine ---
-# Use st.cache_resource for non-data objects like models or API clients
 @st.cache_resource
 def load_style_engine():
     """Loads the image generation engine."""
@@ -56,7 +54,7 @@ if generate_button and uploaded_file is not None and style_key and engine:
             # Display the uploaded image
             max_width = 512 # Limit display width for consistency
             aspect_ratio = content_img.height / content_img.width
-            st.image(content_img, caption="Your Upload", use_column_width=True) # Use column width better
+            st.image(content_img, caption="Your Upload", use_container_width =True) # Use column width better
         except Exception as e:
             st.error(f"Error loading image: {e}")
             st.stop() # Stop execution if image loading fails
@@ -65,23 +63,6 @@ if generate_button and uploaded_file is not None and style_key and engine:
     selected_style_config = STYLES[style_key]
     style_name = selected_style_config['style_name']
 
-    # with col2:
-    #     st.header(f"Stylized as {style_name}")
-    #     with st.spinner(f"Applying {style_name} style using Vertex AI... (This may take a minute)"):
-    #         try:
-    #             # --- Generate Image ---
-    #             stylized_image = engine.apply_style(content_img, selected_style_config)
-
-    #             if stylized_image:
-    #                 st.image(stylized_image, caption=f"In the style of {style_name}", use_column_width=True)
-    #             else:
-    #                 # Error messages are handled within the engine, show a fallback here
-    #                 st.error("Image generation failed. Please check the logs or try again.")
-
-    #         except Exception as e:
-    #             st.error(f"An error occurred during style application: {e}")
-    #             print(f"Error in apply_style call: {e}") # Log to console
-     # In app.py, inside the `if generate_button...` block
     with col2:
         st.header(f"Stylized as {style_name}")
         with st.spinner(f"Applying {style_name} style using OpenAI DALL-E 3... (This may take 20-60 seconds)"):
