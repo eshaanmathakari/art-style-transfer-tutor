@@ -10,11 +10,7 @@ from openai import OpenAI, OpenAIError
 load_dotenv()
 
 # --- Configuration for OpenAI ---
-VISION_MODEL = "gpt-4o" # Use GPT-4o for combined vision and text capabilities
-DALLE_MODEL = "dall-e-3"
-IMAGE_SIZE = "1024x1024"
-IMAGE_QUALITY = "standard" # or "hd"
-IMAGE_STYLE = "vivid" # or "natural"
+VISION_MODEL = "gpt-4o"
 
 class StyleEngine:
     def __init__(self):
@@ -34,6 +30,7 @@ class StyleEngine:
 
     def _get_image_description(self, image: Image.Image) -> str | None:
         """Analyzes the image using GPT-4o and returns a detailed description."""
+        # --- (Keep this function exactly as it is in your current code) ---
         if not self.client:
             st.error("OpenAI client is not initialized.")
             return None
@@ -42,7 +39,6 @@ class StyleEngine:
         try:
             # Convert PIL Image to base64 string
             buffered = BytesIO()
-            # Ensure saving in a common format like PNG or JPEG for vision model
             image_format = image.format if image.format in ["JPEG", "PNG"] else "PNG"
             image.save(buffered, format=image_format)
             img_bytes = buffered.getvalue()
@@ -56,20 +52,19 @@ class StyleEngine:
                         "content": [
                             {
                                 "type": "text",
-                                # Prompt for detailed description suitable for re-generation
                                 "text": "Provide a detailed, objective description of this image suitable for an image generation model. Focus on: 1. Main subject(s) and their appearance/pose. 2. Background elements and setting. 3. Overall composition and layout (e.g., wide shot, close-up). 4. Key objects and their spatial relationships. 5. Dominant colors and lighting style. Avoid interpreting meaning or emotion."
                             },
                             {
                                 "type": "image_url",
                                 "image_url": {
                                     "url": f"data:image/{image_format.lower()};base64,{img_base64}",
-                                    "detail": "high" # Use high detail for better analysis
+                                    "detail": "high"
                                 },
                             },
                         ],
                     }
                 ],
-                max_tokens=300 # Limit description length
+                max_tokens=300
             )
             description = response.choices[0].message.content.strip()
             print(f"✅ Image description received: {description[:100]}...")
@@ -84,26 +79,37 @@ class StyleEngine:
             print(f"Unexpected error during image analysis: {e}")
             return None
 
-    def _generate_image_openai(self, prompt: str) -> Image.Image | None:
+    def _generate_image_openai(self,
+                               prompt: str,
+                               size: str = "1024x1024",
+                               quality: str = "standard",
+                               dalle_style: str = "vivid" # 'vivid' or 'natural'
+                               ) -> Image.Image | None:
         """Generates an image using the OpenAI DALL-E API based on the combined prompt."""
         if not self.client:
             st.error("OpenAI client is not initialized.")
             return None
 
-        print(f"➡️ Sending request to OpenAI DALL-E 3 with combined prompt: '{prompt[:150]}...'")
+        # Use the specific DALL-E model passed or default
+        dalle_model_to_use = "dall-e-3" # Hardcoding DALL-E 3 for now
+
+        print(f"➡️ Sending request to OpenAI {dalle_model_to_use}...")
+        print(f"   Prompt (start): '{prompt[:150]}...'")
+        print(f"   Size: {size}, Quality: {quality}, Style: {dalle_style}")
 
         try:
             response = self.client.images.generate(
-                model=DALLE_MODEL,
+                model=dalle_model_to_use,
                 prompt=prompt, # Use the combined prompt
                 n=1,
-                size=IMAGE_SIZE,
-                quality=IMAGE_QUALITY,
-                style=IMAGE_STYLE,
+                size=size,        # Use parameter
+                quality=quality,  # Use parameter
+                style=dalle_style,# Use parameter
                 response_format="b64_json"
             )
-            print("⬅️ Received response from OpenAI DALL-E 3")
+            print(f"⬅️ Received response from OpenAI {dalle_model_to_use}")
 
+            # --- (Keep the response processing logic exactly as it is) ---
             if response.data and response.data[0].b64_json:
                 b64_data = response.data[0].b64_json
                 try:
@@ -124,48 +130,68 @@ class StyleEngine:
             error_message = f"OpenAI DALL-E API Error: {e.message} (Status code: {e.status_code})"
             st.error(error_message)
             print(error_message)
+            # Add specific check for content policy violation
+            if "content_policy_violation" in str(e):
+                 st.error("The request was rejected due to OpenAI's content policy. Please modify the prompt or image.")
             return None
         except Exception as e:
             st.error(f"An unexpected error occurred during image generation: {e}")
             print(f"Unexpected error during DALL-E call: {e}")
             return None
 
-    def apply_style(self, content_img: Image.Image, style_cfg: dict) -> Image.Image | None:
+    def apply_style(self,
+                    content_img: Image.Image,
+                    style_cfg: dict,
+                    negative_prompt: str = "",
+                    size: str = "1024x1024",
+                    quality: str = "standard",
+                    dalle_style: str = "vivid"
+                   ) -> tuple[Image.Image | None, str | None]: # Return image and description
         """
         Applies style by:
-        1. Getting a description of the content_img using a vision model.
-        2. Combining the description with the target style prompt.
-        3. Generating a new image using DALL-E with the combined prompt.
+        1. Getting description of content_img.
+        2. Combining description, style prompt, and negative prompt.
+        3. Generating image using DALL-E with specified parameters.
+        Returns the generated image and the description used.
         """
         style_name = style_cfg.get('style_name', 'the selected style')
+        # Make sure the style prompt focuses *only* on style elements
         style_details_prompt = style_cfg.get("prompt", f"in the style of {style_name}.")
 
         # --- Step 1: Get Image Description ---
-        with st.spinner("Analyzing image content..."): # Add spinner for this step
-            image_description = self._get_image_description(content_img)
+        image_description = None # Initialize
+        # Add spinner in app.py, not here
+        image_description = self._get_image_description(content_img)
 
         if not image_description:
-            st.error("Could not get a description of the uploaded image. Cannot proceed with style transfer.")
-            return None # Stop if description fails
+            st.error("Could not get a description of the uploaded image. Cannot proceed.")
+            return None, None # Return None for both image and description
 
-        # --- Step 2: Combine Prompts ---
-        # Construct the final prompt for DALL-E
-        # Example structure: "{Detailed Description}. Now render this scene {Style Details Prompt}"
-        combined_prompt = f"{image_description}. Now, render this scene {style_details_prompt}"
+        # --- Step 2: Combine Prompts (Clearer Structure) ---
+        combined_prompt = (
+            f"{image_description}. "
+            f"Now, recreate this entire scene faithfully but render it completely in the artistic style of {style_name}. "
+            f"The style is characterized by: {style_details_prompt}."
+        )
 
-        # Optional: Refine prompt combination logic if needed based on testing
-        # e.g., ensure style isn't mentioned twice redundantly.
+        # Add negative prompt if provided
+        if negative_prompt and negative_prompt.strip():
+            combined_prompt += f" Avoid incorporating the following elements: {negative_prompt.strip()}."
 
         max_prompt_length = 4000 # DALL-E 3 limit
         combined_prompt = combined_prompt[:max_prompt_length]
 
         # --- Step 3: Generate Image ---
-        # The spinner message in app.py will cover this part
-        generated_image = self._generate_image_openai(combined_prompt)
+        generated_image = self._generate_image_openai(
+            prompt=combined_prompt,
+            size=size,
+            quality=quality,
+            dalle_style=dalle_style
+        )
 
         if generated_image:
-            return generated_image
+            # Return both the image and the description used to generate it
+            return generated_image, image_description
         else:
-            # Error message is handled within _generate_image_openai
             st.warning(f"Failed to generate image for style: {style_name}")
-            return None
+            return None, image_description # Return None for image, but still return the description
