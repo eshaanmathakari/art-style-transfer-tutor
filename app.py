@@ -8,7 +8,6 @@ import base64 # Needed for download button
 # --- Load .env file VERY FIRST ---
 load_dotenv()
 # --- Now import your other modules ---
-# Ensure these imports succeed. If not, check the imported files for errors.
 try:
     from styles import STYLES
     from image_engine import StyleEngine
@@ -62,13 +61,7 @@ def load_style_engine():
         return None
 
 # --- Load the engine ---
-# Do this early, after imports and state init
 engine = load_style_engine()
-
-# --- Helper function for download button styling (Optional but nice) ---
-# Using st.download_button is simpler if complex styling isn't needed.
-# We'll use the standard button for simplicity here.
-
 
 # Stop execution if engine failed to load
 if not engine:
@@ -142,31 +135,6 @@ with col_input:
         disabled=(uploaded_file is None or not style_key) # Ensure file and style are selected
     )
 
-# # --- Output Area ---
-# with col_output:
-#     st.header("🖼️ Results & Tutor")
-
-#     # --- Display Original Image ---
-#     if st.session_state.content_img_display:
-#         st.subheader("Original Image")
-#         st.image(st.session_state.content_img_display, caption="Your Upload", use_column_width=True)
-#         st.markdown("---") # Separator
-#     elif uploaded_file is None: # Only show if no file is uploaded yet
-#         st.info("Upload an image and select a style on the left to begin.")
-
-
-#     # --- Generation Logic ---
-#     # This block runs ONLY when the button is clicked AND prerequisites are met
-#     if generate_button and st.session_state.content_img_display and style_key:
-#         # 1. Clear previous results from session state for a fresh run
-#         st.session_state.messages = []
-#         st.session_state.generated_img_data = None
-#         st.session_state.generated_img_description = None
-#         st.session_state.current_style_name = STYLES[style_key]['style_name']
-#         st.session_state.current_style_key = style_key # Store key for potential later use
-
-#         selected_style_config = STYLES[style_key]
-#         style_name_display = st.session_state.current_style_name # Use state variable
 
 
 with col_output:
@@ -179,7 +147,7 @@ with col_output:
     # --- Display Original Image ---
     if st.session_state.content_img_display:
         st.subheader("Original Image")
-        st.image(st.session_state.content_img_display, caption="Your Upload", use_column_width=True)
+        st.image(st.session_state.content_img_display, caption="Your Upload", use_container_width=True)
         st.markdown("---") # Separator
     elif uploaded_file is None: # Only show if no file is uploaded yet
         st.info("Upload an image and select a style on the left to begin.")
@@ -210,7 +178,6 @@ with col_output:
             # --- Call Image Generation ---
             # Use a single spinner for the multi-step generation process
             with st.spinner(f"Generating ({style_name_display})... Step 1/3: Analyzing input image..."):
-                 # Pass all parameters from UI widgets (access via key or session_state)
                 stylized_image, img_description = engine.apply_style(
                     content_img=st.session_state.content_img_display, # Use image from state
                     style_cfg=selected_style_config,
@@ -226,7 +193,6 @@ with col_output:
                 # --- Generate Explanations ---
                 with st.spinner(f"Generating ({style_name_display})... Step 2/3: Initial explanation..."):
                     initial_explanation = explain(style_name_display, selected_style_config)
-                    # Prepend identifier to message content for clarity
                     st.session_state.messages.append({"role": "assistant", "content": f"**About {style_name_display} Style:**\n{initial_explanation}"})
 
                 with st.spinner(f"Generating ({style_name_display})... Step 3/3: Analyzing generated image..."):
@@ -234,8 +200,8 @@ with col_output:
                     st.session_state.messages.append({"role": "assistant", "content": f"**In Your Generated Image:**\n{generated_analysis}"})
 
                 # --- Display Generated Image and Download ---
-                with generation_placeholder.container(): # Update placeholder content
-                    st.image(stylized_image, caption=f"Generated in the style of {style_name_display}", use_column_width=True)
+                with generation_placeholder.container(): 
+                    st.image(stylized_image, caption=f"Generated in the style of {style_name_display}", use_container_width=True)
 
                     # Prepare image data for download
                     buffered = io.BytesIO()
@@ -259,45 +225,34 @@ with col_output:
             else:
                 with generation_placeholder.container():
                     st.error("Image generation failed. Please check parameters/logs or try again.")
-                st.session_state.messages = [] # Clear messages if generation failed
+                st.session_state.messages = [] 
 
         # --- Catch Errors during the Generation Process ---
         except Exception as e:
             st.error(f"An unexpected error occurred during the generation process: {e}")
-            print(f"Error during generation block: {e}") # Log detailed error
-            st.session_state.messages = [] # Clear messages on error
+            print(f"Error during generation block: {e}") 
+            st.session_state.messages = []
 
 
     # --- Display Tutor Chat Interface ---
-    # This runs *after* the generation block if messages exist in state
     if st.session_state.messages:
-        with tutor_placeholder: # Populate the tutor container
+        with tutor_placeholder: 
             st.markdown("--- \n ### 💬 AI Art Tutor Chat")
 
-            # Display existing chat messages
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
 
-            # Chat input for follow-up questions
             if prompt := st.chat_input("Ask a follow-up question about the style...", key="chat_input"):
-                # Add user message to state and display immediately
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 with st.chat_message("user"):
                     st.markdown(prompt)
 
-                # Generate and display assistant response
                 with st.chat_message("assistant"):
                     message_placeholder = st.empty()
                     with st.spinner("Thinking..."):
-                        # Get context from session state
                         current_style_name = st.session_state.get("current_style_name", "the current style")
-                        # Pass the *entire* history for context
                         full_response = answer_follow_up(st.session_state.messages, current_style_name)
                         message_placeholder.markdown(full_response)
 
-                # Add assistant response to state *after* displaying
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-                # Optional: Rerun to ensure the chat input clears cleanly, though usually not needed
-                # st.rerun()

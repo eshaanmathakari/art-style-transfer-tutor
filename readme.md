@@ -2,13 +2,12 @@
 
 [![Python Version](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]([Link-to-your-live-Streamlit-app-if-deployed])
+[![YouTube Demo Video](https://img.youtube.com/vi/3oEp5X8jeyE/hqdefault.jpg)](https://youtu.be/3oEp5X8jeyE)
 
 **Transform your photos into famous art styles and learn about the techniques with an interactive AI tutor!**
 
 This project combines the power of OpenAI's DALL-E 3 for image generation and GPT-4o for vision analysis and conversational tutoring to create an educational and creative AI art studio. Upload an image, choose an artist or style, and watch your photo get reimagined while learning *why* it looks that way.
 
-**[Link to your live Streamlit app if deployed - Highly Recommended!]**
 
 ---
 
@@ -49,14 +48,12 @@ This application orchestrates several AI steps:
 
 ---
 
-## 📸 Screenshots / Demo GIF
+## 📸 Screenshots
 
-*Replace these lines with actual screenshots or, even better, an animated GIF demonstrating the workflow!*
-
-![Screenshot of App Interface]([images/screenshot2.jpeg])
+![Screenshot of App Interface]([images/screenshot1.png])
 *Caption: Main interface showing upload and style selection.*
 
-![Screenshot of Generated Image and Tutor]([images/screenshot1.jpeg])
+![Screenshot of Generated Image and Tutor]([images/screenshot1.png])
 *Caption: Displaying the original, stylized image, and the AI tutor's analysis.*
 
 ---
@@ -115,7 +112,8 @@ This application orchestrates several AI steps:
 Once the setup is complete, run the Streamlit application:
 
 ```bash
-streamlit run app.py```
+streamlit run app.py
+```
 
 Open your web browser to the local URL provided by Streamlit (usually `http://localhost:8501`).
 
