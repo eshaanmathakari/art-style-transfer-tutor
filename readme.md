@@ -49,11 +49,10 @@ This application orchestrates several AI steps:
 ---
 
 ## 📸 Screenshots
-
-![Screenshot of App Interface]([images/screenshot1.png])
+![Screenshot of App Interface](images/screenshot2.png)
 *Caption: Main interface showing upload and style selection.*
 
-![Screenshot of Generated Image and Tutor]([images/screenshot1.png])
+![Screenshot of Generated Image and Tutor](images/screenshot1.png)
 *Caption: Displaying the original, stylized image, and the AI tutor's analysis.*
 
 ---
